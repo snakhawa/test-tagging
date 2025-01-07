@@ -29,7 +29,7 @@ jobs:
 
       # Use GitHub Tag Bump Action to handle version tagging
       - name: Bump Version and Tag
-        uses: anothrnick/github-tag-action@v1.41.0
+        uses: anothrnick/github-tag-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           bump_type: patch # Bumps the patch version (e.g., v1.0.0 -> v1.0.1)
