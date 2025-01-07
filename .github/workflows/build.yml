@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ] # Triggers on pushes to the main branch
+    branches: [ "main" ] # Trigger on pushes to the main branch
   pull_request:
-    branches: [ "main" ] # Triggers on pull requests to the main branch
-  workflow_dispatch: # Allows manual workflow execution
+    branches: [ "main" ] # Trigger on pull requests to the main branch
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
   build:
@@ -27,45 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get the latest tag
-        id: get_latest_tag
-        run: |
-          latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1))
-          echo "Latest tag: $latest_tag"
-          echo "tag=$latest_tag" >> $GITHUB_ENV
+      # Use GitHub Tag Bump Action to handle version tagging
+      - name: Bump Version and Tag
+        uses: anothrnick/github-tag-action@v1.41.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          bump_type: patch # Bumps the patch version (e.g., v1.0.0 -> v1.0.1)
 
-      - name: Generate new tag
-        id: generate_tag
-        run: |
-          latest_tag=${{ env.tag }}
-          if [[ -z "$latest_tag" ]]; then
-            new_tag="v1.0.0"
-          else
-            IFS='.' read -r -a parts <<< "${latest_tag#v}"
-            ((parts[2]++))
-            new_tag="v${parts[0]}.${parts[1]}.${parts[2]}"
-          fi
-          echo "New tag: $new_tag"
-          echo "new_tag=$new_tag" >> $GITHUB_ENV
-
-      - name: Create and push tag
+      - name: Push Tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git tag ${{ env.new_tag }}
-          git push origin ${{ env.new_tag }}
-
-  create-release-branch:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create a release branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          release_branch="release-$(date +'%Y%m%d')"
-          git checkout -b $release_branch
-          git push origin $release_branch
-          echo "Release branch $release_branch created and pushed."
+          git push --tags
