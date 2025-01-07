@@ -1,43 +1,27 @@
-name: CI
-
+# example 2: on merge to master from pull request (recommended)
+name: Bump version
 on:
-  push:
-    branches: [ "main" ] # Trigger on pushes to the main branch
   pull_request:
-    branches: [ "main" ] # Trigger on pull requests to the main branch
-  workflow_dispatch: # Allow manual trigger
+    types:
+      - closed
+    branches:
+      - master
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
-
-  tag-on-merge:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
-    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
-      # Use GitHub Tag Bump Action to handle version tagging
-      - name: Bump Version and Tag
-        uses: anothrnick/github-tag-action@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          bump_type: patch # Bumps the patch version (e.g., v1.0.0 -> v1.0.1)
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: '0'
 
-      - name: Push Tags
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@v1 # Don't use @master or @v1 unless you're happy to test the latest version
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git push --tags
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # if you don't want to set write permissions use a PAT token
+          WITH_V: true
+          PRERELEASE: true
